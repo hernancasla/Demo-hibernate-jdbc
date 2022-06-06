@@ -18,7 +18,7 @@ public class Order {
     @CreationTimestamp
     private Date date;
 
-    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(cascade = CascadeType.ALL)
     @JoinColumn(name = "ORDER_ID", referencedColumnName = "ID")
     private List<OrderDetail> orderDetails;
 

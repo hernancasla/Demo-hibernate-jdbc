@@ -1,4 +1,4 @@
-# Demo Hibernate JDBC
+# Demo Hibernate
 ## Prerrequisitos
 - IDE IntelliJ o Eclipse, la demo esta armada en IntelliJ
 - Ultima version de la JDK disponible, como minimo la version 1.8.
@@ -137,178 +137,181 @@ public class HibernateUtil {
 }
 ```
 Como podemos observar, dentro de esta clase utilitaria estamos indicandole al registry de hibernate la ubicacion de nuestro archivo hibernate.cfg.xml y creando nuestra session factory.
-For production environments...
 
-```sh
-npm install --production
-NODE_ENV=production node app
+**y con esto estamos listo para empezar a MAPEAR!!!**
+
+## Mapeo con JPA
+para el mapeo de los distintos objetos y tablas, tenemos dos formas en hibernate, una es mediante la especificacion propia de Hibernate la cual puede ser realizada con archivos XML, y la otra es mediante anotaciones definidas en las especificaciones JPA, las cuales nos permiten abstraer nuestro modelo de persistencia del ORM con el que estemos trabajando, esto quiere decir que si el dia de manana decidieramos cambiar de hibernate por spring data por ejemplo, nuestras entidades deberian quedar exactamente igual.
+### DER
+![alt text](https://github.com/hernancasla/Demo-hibernate-jdbc/blob/main/readme-files/der.png?raw=true)
+OJO! aun no tenemos nada creado en la base de datos, vamos a trabajar solamente con hibernate
+
+### Entities
+**Vamos a crear las entidades Order, OrderDetail y Product**
+Arranquemos por la clase mas simple e independiente de nuestro modelo la clase de producto
+```Java
+@Entity
+@Table(name="PRODUCT")
+public class Product {
+    @Id
+    @Column(name="ID")
+    private int id;
+
+    @Column(name="DESCRIPTION")
+    private String description;
+
+    @Column(name="PRICE")
+    private Double price;
+}
+```
+Omitimos los getters y setters solo para no sumar codigo innecesario para la explicacion, pero obviamente en el codigo estan implementados.
+Veamos cada Annotation de **JPA** que agregamos
+`@Entity:` Definimos una nueva entidad de la base de datos que vamos a relacionar directamente con nuestra clase Product
+`@Table(name="PRODUCT"):` Definimos atributos propio de la tabla que queremos mapear, en este caso solo se agrego el nombre,pero existen muchas otras propiedades para agregar.
+`@Id:` es una annotation obligatoria en JPA, la cual indica el identificador unico de nuestra tabla
+`@Column:`  con esta annotation mapeamos las columnas de la base con artributos de nuestra clase, en este ejemplo solo se esta mapeando el nombre pero existen mas atributos que veremos en breve.
+
+Sigamos por la entidad ORDER
+
+```Java
+@Entity
+@Table(name="ORDER_T")
+public class Order {
+    @Id
+    @GeneratedValue(strategy=GenerationType.AUTO)
+    private int id;
+
+    @Column(name="ORDER_DATE")
+    @CreationTimestamp
+    private Date date;
+
+    @OneToMany(cascade = CascadeType.ALL)
+    @JoinColumn(name = "ORDER_ID", referencedColumnName = "ID")
+    private List<OrderDetail> orderDetails;
+}
+```
+Veamos que hay de nuevo,
+`@GeneratedValue(strategy=GenerationType.AUTO):` Con esta annotation y su parametro strategy estamos diciendole a hibernate que este ID va a ser autogenerado es decir estamos delegando la responsabilidad de la generacion del ID de la tabla a hibernate, tambien podriamos configurar una secuencia propia de la base para que haga uso de ella, es bastante versatil.
+
+` @CreationTimestamp:` con esta annotation le estamos indicando a hibernate que nuestro "date" tiene un valor por defecto, el cual es la fecha y hora del momdento de creacion de la tabla... bastante practico no?
+
+**Llegamos a un punto importante de la especificacion de JPA, las relaciones!!!**
+Existen varios tipos de relaciones entre tablas de bases de datos, 1 a 1, 1 a muchos, muchos a 1. Vamos a desarrollar dos de ellos en esta demo.
+
+`@OneToMany(cascade = CascadeType.ALL):` Con esta annotation le estamos diciendo a hibernate que nuestra clase Order tiene una lista de detalles es decir, 1 orden - muchos detalles, por eso la annotation **OneToMany**. Ademas estamos definidiendo el atributo **cascade** en ete caso estamos indicando que el cascadeo va a ser total, es decir, OrderDetail no va a existir mas que por medio de nuestra clase Order, si un detalle es borrado de una orden, este mismo va a ser eliminado de la tabla detalle, y si una orden es eliminada, entonces todos sus detalles lo seran tambien. Existen varias configuraciones de cascade, dependiendo de nuestra necesidad utilizaremos la mas nos convenga.
+`@JoinColumn:` con esta annotation definimos cuales son las columnas que relacionan las tablas.
+
+
+Y por ultimo veamos la entidad ORDER_DETAIL
+```Java
+@Entity
+@Table(name="ORDER_DETAIL")
+public class OrderDetail {
+    @Id
+    @GeneratedValue(strategy=GenerationType.AUTO)
+    private int id;
+
+    @OneToOne
+    @JoinColumn(name = "PRODUCT_ID", referencedColumnName = "ID")
+    private Product product;
+
+    @Column(name="QUANTITY")
+    private int quantity;
+}
+```
+`@OneToOne:` Como bien nuestro DER lo indica, la relacion entre detalles y productos es de 1 a 1, por eso el motivo de dicha annotation.
+
+##### Listo todo mapeado!!!
+
+## Creacion de los DAOs
+Si bien podriamos hacer uso directo de la API que nos proporciona hibernate para la ralizar nuestro CRUD, como somos gente de bien, vamos a implementar una capa de DAO (data access object) en la cual delegamos la responsabilidad de realizar cada operacion del CRUD.
+ProductDao
+```Java
+public class ProductDao implements DAO<Product> {
+    Session session = HibernateUtil.getSessionFactory().openSession();
+    @Override
+    public Product get(int id) {
+        return  session.get(Product.class, id);
+    }
+
+    @Override
+    public List<Product> getAll() {
+        String hql = "FROM Product";
+        Query query = session.createQuery(hql);
+        return query.list();
+    }
+
+    @Override
+    public int save(Product product) {
+        session.getTransaction().begin();
+        int id = (int) session.save(product);
+        session.getTransaction().commit();
+        return id;
+    }
+
+    public void update(Product product) {
+        session.getTransaction().begin();
+        session.saveOrUpdate(product);
+        session.getTransaction().commit();
+
+    }
+    @Override
+    public void delete(Product product) {
+        session.getTransaction().begin();
+        session.delete(product);
+        session.getTransaction().commit();
+    }
+```
+Veamos que tenemos de itneresante,
+`HibernateUtil.getSessionFactory().openSession()` con esto obtenemos una Session de hibernate con la cual vamos a estar interactuando en cada operacion que deseemos realizar.
+
+`session.get(Product.class, id)` Se puede observar que obtener un producto por su ID es tan simple como pasar la clase y el correspondiente ID al metodo get del objeto session... nada mal pero sigamos.
+
+`session.createQuery(hql)` HQL realmente merece un gran parrafo aparte, pero como la idea de esta demo es dar un pantallazo general, vamos a resumir en que HQL es el lenguaje de hibernate para realizar consultas sobre objetos, podemos joinear, sumarizar, y muchas otras cosas propias de SQL, pero siempre tener en cuenta que en HQL se trabaja con los objetos mapeados.
+esto nos devuelve un objeto de tipo query que tiene varias propiedades, pero en concreto el metodo getList nos devuelve nuestra lista de productos.
+
+`session.getTransaction().begin()` con el metodo begin damos la apertura a una nueva transaccion que va a finalizar con la llamada al metodo `commit()` o `rollback()`.
+
+`session.save(product)` esta llamada tiene por objetivo persistir un nuevo producto, por lo que si, el ID ya se encuentra en la base de datos, va a romper, casi contrario va a persistir el producto y devolvernos el nuevo ID persistido en la base de datos.
+
+`session.saveOrUpdate(product)` este metodo realiza una insersion si el id no existe, y un update en caso de ya encontrarse creado, el metodo es de tipo void, por lo cual no devuelve nada.
+
+
+Luego pasamos a la creación del OrderDao, pero eso ya podran observarlo en el codigo, dado que no tenemos nada nuevo por exlpicar.
+
+## Probemos nuestra solución
+Creamos nuestro test unitario con JUnit e implementamos los metodos que sean necesarios, veamos alguno de ellos
+```Java
+ @Test
+    public void testSaveProduct(){
+        Product yerba = new Product();
+        yerba.setDescription("YERBA");
+        yerba.setPrice(200.0);
+
+        Product azucar = new Product();
+        azucar.setDescription("AZUCAR");
+        azucar.setPrice(100.0);
+
+        Product fideos = new Product();
+        fideos.setDescription("FIDEOS");
+        fideos.setPrice(50.5);
+
+        ProductDao productDao = new ProductDao();
+        productDao.save(yerba);
+        productDao.save(azucar);
+        productDao.save(fideos);
+
+        List<Product> productList = productDao.getAll();
+        productList.stream()
+            .map(p ->String.format("%d: %s $%.2f",p.getId(),p.getDescription(),p.getPrice()))
+            .forEach(System.out::println);
+        Assert.assertFalse(productList.isEmpty());
+    }
+```
+En este test procedimos a crear 3 productos y realizar un getAll de ellos, posteriormente imprimirlos y validar que la lista no este vacia para que el test este OK. La resupuesta:
+```
+1: YERBA $200.00
+2: AZUCAR $100.00
+3: FIDEOS $50.50
 ```
 
-Dillinger is a cloud-enabled, mobile-ready, offline-storage compatible,
-AngularJS-powered HTML5 Markdown editor.
-
-- Type some Markdown on the left
-- See HTML in the right
-- ✨Magic ✨
-
-## Features
-
-- Import a HTML file and watch it magically convert to Markdown
-- Drag and drop images (requires your Dropbox account be linked)
-- Import and save files from GitHub, Dropbox, Google Drive and One Drive
-- Drag and drop markdown and HTML files into Dillinger
-- Export documents as Markdown, HTML and PDF
-
-Markdown is a lightweight markup language based on the formatting conventions
-that people naturally use in email.
-As [John Gruber] writes on the [Markdown site][df1]
-
-> The overriding design goal for Markdown's
-> formatting syntax is to make it as readable
-> as possible. The idea is that a
-> Markdown-formatted document should be
-> publishable as-is, as plain text, without
-> looking like it's been marked up with tags
-> or formatting instructions.
-
-This text you see here is *actually- written in Markdown! To get a feel
-for Markdown's syntax, type some text into the left window and
-watch the results in the right.
-
-## Tech
-
-Dillinger uses a number of open source projects to work properly:
-
-- [AngularJS] - HTML enhanced for web apps!
-- [Ace Editor] - awesome web-based text editor
-- [markdown-it] - Markdown parser done right. Fast and easy to extend.
-- [Twitter Bootstrap] - great UI boilerplate for modern web apps
-- [node.js] - evented I/O for the backend
-- [Express] - fast node.js network app framework [@tjholowaychuk]
-- [Gulp] - the streaming build system
-- [Breakdance](https://breakdance.github.io/breakdance/) - HTML
-  to Markdown converter
-- [jQuery] - duh
-
-And of course Dillinger itself is open source with a [public repository][dill]
-on GitHub.
-
-
-
-## Plugins
-
-Dillinger is currently extended with the following plugins.
-Instructions on how to use them in your own application are linked below.
-
-| Plugin | README |
-| ------ | ------ |
-| Dropbox | [plugins/dropbox/README.md][PlDb] |
-| GitHub | [plugins/github/README.md][PlGh] |
-| Google Drive | [plugins/googledrive/README.md][PlGd] |
-| OneDrive | [plugins/onedrive/README.md][PlOd] |
-| Medium | [plugins/medium/README.md][PlMe] |
-| Google Analytics | [plugins/googleanalytics/README.md][PlGa] |
-
-## Development
-
-Want to contribute? Great!
-
-Dillinger uses Gulp + Webpack for fast developing.
-Make a change in your file and instantaneously see your updates!
-
-Open your favorite Terminal and run these commands.
-
-First Tab:
-
-```sh
-node app
-```
-
-Second Tab:
-
-```sh
-gulp watch
-```
-
-(optional) Third:
-
-```sh
-karma test
-```
-
-#### Building for source
-
-For production release:
-
-```sh
-gulp build --prod
-```
-
-Generating pre-built zip archives for distribution:
-
-```sh
-gulp build dist --prod
-```
-
-## Docker
-
-Dillinger is very easy to install and deploy in a Docker container.
-
-By default, the Docker will expose port 8080, so change this within the
-Dockerfile if necessary. When ready, simply use the Dockerfile to
-build the image.
-
-```sh
-cd dillinger
-docker build -t <youruser>/dillinger:${package.json.version} .
-```
-
-This will create the dillinger image and pull in the necessary dependencies.
-Be sure to swap out `${package.json.version}` with the actual
-version of Dillinger.
-
-Once done, run the Docker image and map the port to whatever you wish on
-your host. In this example, we simply map port 8000 of the host to
-port 8080 of the Docker (or whatever port was exposed in the Dockerfile):
-
-```sh
-docker run -d -p 8000:8080 --restart=always --cap-add=SYS_ADMIN --name=dillinger <youruser>/dillinger:${package.json.version}
-```
-
-> Note: `--capt-add=SYS-ADMIN` is required for PDF rendering.
-
-Verify the deployment by navigating to your server address in
-your preferred browser.
-
-```sh
-127.0.0.1:8000
-```
-
-## License
-
-MIT
-
-**Free Software, Hell Yeah!**
-
-[//]: # (These are reference links used in the body of this note and get stripped out when the markdown processor does its job. There is no need to format nicely because it shouldn't be seen. Thanks SO - http://stackoverflow.com/questions/4823468/store-comments-in-markdown-syntax)
-
-[dill]: <https://github.com/joemccann/dillinger>
-[git-repo-url]: <https://github.com/joemccann/dillinger.git>
-[john gruber]: <http://daringfireball.net>
-[df1]: <http://daringfireball.net/projects/markdown/>
-[markdown-it]: <https://github.com/markdown-it/markdown-it>
-[Ace Editor]: <http://ace.ajax.org>
-[node.js]: <http://nodejs.org>
-[Twitter Bootstrap]: <http://twitter.github.com/bootstrap/>
-[jQuery]: <http://jquery.com>
-[@tjholowaychuk]: <http://twitter.com/tjholowaychuk>
-[express]: <http://expressjs.com>
-[AngularJS]: <http://angularjs.org>
-[Gulp]: <http://gulpjs.com>
-
-[PlDb]: <https://github.com/joemccann/dillinger/tree/master/plugins/dropbox/README.md>
-[PlGh]: <https://github.com/joemccann/dillinger/tree/master/plugins/github/README.md>
-[PlGd]: <https://github.com/joemccann/dillinger/tree/master/plugins/googledrive/README.md>
-[PlOd]: <https://github.com/joemccann/dillinger/tree/master/plugins/onedrive/README.md>
-[PlMe]: <https://github.com/joemccann/dillinger/tree/master/plugins/medium/README.md>
-[PlGa]: <https://github.com/RahulHP/dillinger/blob/master/plugins/googleanalytics/README.md>

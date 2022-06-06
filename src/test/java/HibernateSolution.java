@@ -56,15 +56,28 @@ public class HibernateSolution {
         Assert.assertTrue("El ID deberia tener valor", id>0);
     }
     @Test
-    public void testUpdateDao(){
-        Product product = new Product();
-        product.setDescription("YERBA3-3");
-        product.setId(3);
-        ProductDao productDao = new ProductDao();
-        productDao.update(product);
+    public void testSaveProduct(){
+        Product yerba = new Product();
+        yerba.setDescription("YERBA");
+        yerba.setPrice(200.0);
 
-        System.out.println(productDao.get(3).getDescription());
-        assertEquals(productDao.get(3).getDescription(), "YERBA3-3");
+        Product azucar = new Product();
+        azucar.setDescription("AZUCAR");
+        azucar.setPrice(100.0);
+
+        Product fideos = new Product();
+        fideos.setDescription("FIDEOS");
+        fideos.setPrice(50.5);
+
+        ProductDao productDao = new ProductDao();
+        productDao.save(yerba);
+        productDao.save(azucar);
+        productDao.save(fideos);
+
+        List<Product> productList = productDao.getAll();
+        productList.stream().map(p ->String.format("%d: %s $%.2f",p.getId(),p.getDescription(),p.getPrice()))
+                .forEach(System.out::println);
+        Assert.assertFalse(productList.isEmpty());
     }
     @Test
     public void testGetAll(){

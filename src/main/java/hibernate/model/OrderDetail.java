@@ -7,6 +7,7 @@ import java.util.Date;
 @Table(name="ORDER_DETAIL")
 public class OrderDetail {
     @Id
+    @GeneratedValue(strategy=GenerationType.AUTO)
     private int id;
 
     @OneToOne

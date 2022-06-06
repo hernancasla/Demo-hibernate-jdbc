@@ -18,6 +18,7 @@ public class ProductDao implements DAO<Product> {
     public List<Product> getAll() {
         String hql = "FROM Product";
         Query query = session.createQuery(hql);
+
         return query.list();
     }
 
