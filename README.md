@@ -2,7 +2,7 @@
 ## Prerrequisitos
 - IDE IntelliJ o Eclipse, la demo esta armada en IntelliJ
 - Ultima version de la JDK disponible, como minimo la version 1.8.
--
+
 ## Setup
 ### Creamos un proyecto MAVEN
 ```sh
@@ -274,7 +274,7 @@ esto nos devuelve un objeto de tipo query que tiene varias propiedades, pero en 
 
 `session.save(product)` esta llamada tiene por objetivo persistir un nuevo producto, por lo que si, el ID ya se encuentra en la base de datos, va a romper, casi contrario va a persistir el producto y devolvernos el nuevo ID persistido en la base de datos.
 
-`session.saveOrUpdate(product)` este metodo realiza una insersion si el id no existe, y un update en caso de ya encontrarse creado, el metodo es de tipo void, por lo cual no devuelve nada.
+`session.saveOrUpdate(product)` este metodo realiza una inserción si el id no existe, y un update en caso de ya encontrarse creado, el metodo es de tipo void, por lo cual no devuelve nada.
 
 
 Luego pasamos a la creación del OrderDao, pero eso ya podran observarlo en el codigo, dado que no tenemos nada nuevo por exlpicar.
