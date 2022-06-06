@@ -8,11 +8,11 @@ import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.List;
 
-public class DetailOrderDao implements DAO<OrderDetail>{
-    private static final String selectById = "SELECT ID, PRODUCT_ID, QUANTITY FROM DETAIL WHERE ID = ?";
-    private static final String selectAll = "SELECT ID, PRODUCT_ID, QUANTITY FROM DETAIL";
-    private static final String insert = "INSERT INTO DETAIL (ID,PRODUCT_ID,QUANTITY) VALUES (?,?,?)";
-    private static final String deleteById = "DELETE FROM DETAIL WHERE ID = ?";
+public class OrderDetailDao implements DAO<OrderDetail>{
+    private static final String selectById = "SELECT ID, PRODUCT_ID, QUANTITY FROM ORDER_DETAIL WHERE ID = ?";
+    private static final String selectAll = "SELECT ID, PRODUCT_ID, QUANTITY FROM ORDER_DETAIL";
+    private static final String insert = "INSERT INTO ORDER_DETAIL (ID,PRODUCT_ID,QUANTITY,ORDER_ID) VALUES (?,?,?,?)";
+    private static final String deleteById = "DELETE FROM ORDER_DETAIL WHERE ID = ?";
     private static final String updateById = "UPDATE FROM DETAIL_ORDER SET PRODUCT_ID = ?, QUANTITY= ? WHERE ID = ?";
     private final ProductDao productDao = new ProductDao();
 
@@ -89,6 +89,7 @@ public class DetailOrderDao implements DAO<OrderDetail>{
                 statement.setInt(1,detail.getId());
                 statement.setInt(2,detail.getProduct().getId());
                 statement.setInt(3,detail.getQuantity());
+                statement.setInt(4,detail.getOrder_id());
                 return statement.executeUpdate();
             }
         } catch(Exception ex){
@@ -100,7 +101,7 @@ public class DetailOrderDao implements DAO<OrderDetail>{
     @Override
     public int update(OrderDetail detail) {
         try(ConnectionManager cm = ConnectionManager.getInstance()){
-            try(PreparedStatement statement = cm.getConnection().prepareStatement(insert)){
+            try(PreparedStatement statement = cm.getConnection().prepareStatement(updateById)){
                 statement.setInt(1,detail.getProduct().getId());
                 statement.setInt(2,detail.getQuantity());
                 statement.setInt(3,detail.getId());

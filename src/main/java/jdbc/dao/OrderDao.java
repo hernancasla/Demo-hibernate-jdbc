@@ -11,14 +11,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class OrderDao implements DAO<Order> {
-    private static final String selectById = "SELECT O.ID AS ID, O.DATE_ORDER, D.ID AS DETAIL_ID FROM ORDER_T O" +
-            " INNER JOIN DETAIL D ON O.ID = D.ORDER_ID WHERE O.ID = ?";
-    private static final String selectAll = "SELECT O.ID AS ID, O.DATE_ORDER, D.ID AS DETAIL_ID FROM ORDER_T O" +
-            " INNER JOIN DETAIL D ON O.ID = D.ORDER_ID";
-    private static final String insert = "INSERT INTO ORDER_T (ID,DATE_ORDER) VALUES (?,?)";
+    private static final String selectById = "SELECT O.ID AS ID, O.ORDER_DATE, D.ID AS DETAIL_ID FROM ORDER_T O" +
+            " INNER JOIN ORDER_DETAIL D ON O.ID = D.ORDER_ID WHERE O.ID = ?";
+    private static final String selectAll = "SELECT O.ID AS ID, O.ORDER_DATE, D.ID AS DETAIL_ID FROM ORDER_T O" +
+            " INNER JOIN ORDER_DETAIL D ON O.ID = D.ORDER_ID";
+    private static final String insert = "INSERT INTO ORDER_T (ID,ORDER_DATE) VALUES (?,?)";
     private static final String deleteById = "DELETE FROM ORDER_T WHERE ID = ?";
-    private static final String updateById = "UPDATE FROM ORDER_T SET DATE_ORDER = ? WHERE ID = ?";
-    private final DetailOrderDao detailDao = new DetailOrderDao();
+    private static final String updateById = "UPDATE FROM ORDER_T SET ORDER_DATE = ? WHERE ID = ?";
+    private final OrderDetailDao detailDao = new OrderDetailDao();
 
     @Override
     public Order get(int id) {
@@ -80,19 +80,21 @@ public class OrderDao implements DAO<Order> {
     @Override
     public int save(Order order) {
 
-        for(OrderDetail detail : order.getOrderDetails()){
-            detailDao.save(detail);
-        }
         try(ConnectionManager cm = ConnectionManager.getInstance()){
             try(PreparedStatement statement = cm.getConnection().prepareStatement(insert)){
                 statement.setInt(1,order.getId());
                 statement.setDate(2,new Date(order.getDate().getTime()));
-                return statement.executeUpdate();
+                statement.execute();
             }
         } catch(Exception ex){
             ex.printStackTrace();
             return -1;
         }
+        for(OrderDetail detail : order.getOrderDetails()){
+            detail.setOrder_id(order.getId());
+            detailDao.save(detail);
+        }
+        return 0;
     }
 
     @Override

@@ -11,7 +11,7 @@ import java.util.List;
 public class ProductDao implements DAO<Product> {
     private static final String selectById = "SELECT ID, DESCRIPTION, PRICE FROM PRODUCT WHERE ID = ?";
     private static final String selectAll = "SELECT ID, DESCRIPTION, PRICE  FROM PRODUCT";
-    private static final String insert = "INSERT INTO PRODUCT (ID,DESCRIPTION,PRICE ) VALUES (?,?)";
+    private static final String insert = "INSERT INTO PRODUCT (ID,DESCRIPTION,PRICE ) VALUES (?,?,?)";
     private static final String deleteById = "DELETE FROM PRODUCT WHERE ID = ?";
     private static final String updateById = "UPDATE FROM PRODUCT SET DESCRIPTION = ? , PRICE = ? WHERE ID = ?";
 
@@ -67,7 +67,7 @@ public class ProductDao implements DAO<Product> {
             try(PreparedStatement statement = cm.getConnection().prepareStatement(insert)){
                 statement.setInt(1,product.getId());
                 statement.setString(2,product.getDescription());
-                statement.setDouble(2,product.getPrice());
+                statement.setDouble(3,product.getPrice());
                 return statement.executeUpdate();
             }
         } catch(Exception ex){
