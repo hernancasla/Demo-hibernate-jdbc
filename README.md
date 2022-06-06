@@ -1,4 +1,3 @@
-# Demo-hibernate-jdbc
 # Demo Hibernate JDBC
 ## Prerrequisitos
 - IDE IntelliJ o Eclipse, la demo esta armada en IntelliJ
@@ -35,23 +34,8 @@ Debemos agregar las 2 dependencias necesarias en nuestro `pom.xml`
 </dependency>
 <dependency>
 ```
-
-Dillinger requires [Node.js](https://nodejs.org/) v10+ to run.
-
-Install the dependencies and devDependencies and start the server.
-
-```java
-
-```
-
-For production environments...
-
-```sh
-npm install --production
-NODE_ENV=production node app
-```
 ### Build
-Agregamos la entrada correspondiente a nuestro Build de maven
+Agregamos la entrada correspondiente a nuestro Build de maven para que nuestro classpath quede correctamente configurado
 ```xml
 <build>
         <plugins>
@@ -75,6 +59,91 @@ Agregamos la entrada correspondiente a nuestro Build de maven
         </plugins>
     </build>
 ```
+Por ultimo le damos CLEAN INSTALL en nuestra herramienta visual de maven o bien ejecutamos el comando `mvn clean install` por consola.
+
+En la barra derecha de IntelliJ hay un panel llamado Maven ahi dentro tenemos todas las acciones que podemos ejecutar, en este caso debemos seleccionar clean + install y presionar el boton PLAY (el que esta en verde)
+![alt text](https://github.com/hernancasla/Demo-hibernate-jdbc/blob/main/readme-files/clean-install.png?raw=true)
+
+Y Listo, con todo esto tenemos todo lo necesario para empezar a trabajar!.
+## Configuracion de Hibernate
+
+### Creacion del archivo hibernate.cfg.xml
+Lo primero que tenemos que tener en cuenta es la creacion de este archivo, la cual debe estar ubicada en la parte de "resources" del proyecto de modo de poder enviarle la ruta al framework y asi pueda leerse toda nuestra configuracion.
+
+En este archivo vamos a encontrar varias entradas necesarias para poder comenzar a trabajar con nuestro modelo y algunas otras mas bien opcionales que nos facilitaran la vida.
+
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE hibernate-configuration PUBLIC
+        "-//Hibernate/Hibernate Configuration DTD 3.0//EN"
+        "http://hibernate.sourceforge.net/hibernate-configuration-3.0.dtd">
+<hibernate-configuration>
+    <session-factory>
+        <property name="hibernate.connection.driver_class">org.h2.Driver</property>
+        <property name="hibernate.connection.url">jdbc:h2:~/test</property>
+        <property name="hibernate.connection.username">sa</property>
+        <property name="hibernate.connection.password"></property>
+        <property name="hibernate.dialect">org.hibernate.dialect.H2Dialect</property>
+        <property name="show_sql">true</property>
+        <property name="format_sql">true</property>
+        <property name="hbm2ddl.auto">create-drop</property>
+    </session-factory>
+</hibernate-configuration>
+```
+Inicialmente este va a ser nuestra configuracion, pasemos a explicar un poco cada "property"
+`hibernate.connection.driver_class:` se define el driver de la base de datos que querremos configurar, en este caso es el driver correspondiente a la base H2.
+`hibernate.connection.url:` se define la url de conexion a la base, en otros casos podria definirse con el host y puerto.
+`hibernate.connection.username:` se define el nombre del usuario con el que nos vamos a conectar a la BD.
+`hibernate.connection.password:` se define la contraseña con la que nos vamos a conectar a la BD.
+`show_sql:` este parametro es sumamente util, nos va a mostrar por consola todos los comandos SQL que se van a ir ejecutando.
+`format_sql:`este parametro cuando esta en true nos formatea la consulta SQL de modo que sea mas limpia a la consulta realmente ejecutada, aunque en escencia el resultado va a ser el mismo.
+`hbm2ddl.auto:` este es otro de los parametros sumamente utiles, podemos tener varias opciones, dos de ellas son
+- `create-drop` en esta configuracion cada vez que levantemos la aplicacion Hibernate ejecutara los comandos de DROP de cada una de las tablas mapeadas y luego CREATE, es sumamente util cuando nos encontramos definiendo el modelo de objetos en conjunto con el modelo de datos.
+- `update` en esta configuracion hibernate solo se va a dedicar a crear los objetos que no existan, normalmente mediante alters table, o agregados de constraint, secuencias, etc. Es sumamente util cuando estamos modificando nuestro modelo de objetos y queremos a la vez verlo impactado en nuestro modelo de datos.
+
+### Creacion de HibernateUtil
+La creacion de esta clase es opcional, pero concretamente no existe proyecto que no tenga una clase encargada de adminsitrar la session factory de hibernate.
+En nuestro caso creamos una especie de singleton de la clase SessionFactory. Con esto queremos decir que nuestra SessionFactory va a ser la misma durante toda la ejecucion de nuestro programa.
+Pero veamos algo de codigo, la cosa quedaria asi:
+```java
+public class HibernateUtil {
+    private static SessionFactory sessionFactory = buildSessionFactory();
+
+    private static SessionFactory buildSessionFactory() {
+        try {
+            if (sessionFactory == null) {
+                StandardServiceRegistry standardRegistry = new StandardServiceRegistryBuilder()
+                        .configure("hibernate.cfg.xml").build();
+
+                Metadata metaData = new MetadataSources(standardRegistry)
+                        .getMetadataBuilder()
+                        .build();
+
+                sessionFactory = metaData.getSessionFactoryBuilder().build();
+            }
+            return sessionFactory;
+        } catch (Throwable ex) {
+            throw new ExceptionInInitializerError(ex);
+        }
+    }
+
+    public static SessionFactory getSessionFactory() {
+        return sessionFactory;
+    }
+
+    public static void shutdown() {
+        getSessionFactory().close();
+    }
+}
+```
+Como podemos observar, dentro de esta clase utilitaria estamos indicandole al registry de hibernate la ubicacion de nuestro archivo hibernate.cfg.xml y creando nuestra session factory.
+For production environments...
+
+```sh
+npm install --production
+NODE_ENV=production node app
+```
+
 Dillinger is a cloud-enabled, mobile-ready, offline-storage compatible,
 AngularJS-powered HTML5 Markdown editor.
 
