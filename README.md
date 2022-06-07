@@ -65,10 +65,10 @@ En la barra derecha de IntelliJ hay un panel llamado Maven ahi dentro tenemos to
 ![alt text](https://github.com/hernancasla/Demo-hibernate-jdbc/blob/main/readme-files/clean-install.png?raw=true)
 
 Y Listo, con todo esto tenemos todo lo necesario para empezar a trabajar!.
-## Configuracion de Hibernate
+## Configuración de Hibernate
 
-### Creacion del archivo hibernate.cfg.xml
-Lo primero que tenemos que tener en cuenta es la creacion de este archivo, la cual debe estar ubicada en la parte de "resources" del proyecto de modo de poder enviarle la ruta al framework y asi pueda leerse toda nuestra configuracion.
+### Creación del archivo hibernate.cfg.xml
+Lo primero que tenemos que tener en cuenta es la creación de este archivo, la cual debe estar ubicada en la parte de "resources" del proyecto de modo de poder enviarle la ruta al framework y asi pueda leerse toda nuestra configuracion.
 
 En este archivo vamos a encontrar varias entradas necesarias para poder comenzar a trabajar con nuestro modelo y algunas otras mas bien opcionales que nos facilitaran la vida.
 
@@ -91,20 +91,27 @@ En este archivo vamos a encontrar varias entradas necesarias para poder comenzar
 </hibernate-configuration>
 ```
 Inicialmente este va a ser nuestra configuracion, pasemos a explicar un poco cada "property"
+
 `hibernate.connection.driver_class:` se define el driver de la base de datos que querremos configurar, en este caso es el driver correspondiente a la base H2.
+
 `hibernate.connection.url:` se define la url de conexion a la base, en otros casos podria definirse con el host y puerto.
+
 `hibernate.connection.username:` se define el nombre del usuario con el que nos vamos a conectar a la BD.
+
 `hibernate.connection.password:` se define la contraseña con la que nos vamos a conectar a la BD.
+
 `show_sql:` este parametro es sumamente util, nos va a mostrar por consola todos los comandos SQL que se van a ir ejecutando.
+
 `format_sql:`este parametro cuando esta en true nos formatea la consulta SQL de modo que sea mas limpia a la consulta realmente ejecutada, aunque en escencia el resultado va a ser el mismo.
+
 `hbm2ddl.auto:` este es otro de los parametros sumamente utiles, podemos tener varias opciones, dos de ellas son
 - `create-drop` en esta configuracion cada vez que levantemos la aplicacion Hibernate ejecutara los comandos de DROP de cada una de las tablas mapeadas y luego CREATE, es sumamente util cuando nos encontramos definiendo el modelo de objetos en conjunto con el modelo de datos.
 - `update` en esta configuracion hibernate solo se va a dedicar a crear los objetos que no existan, normalmente mediante alters table, o agregados de constraint, secuencias, etc. Es sumamente util cuando estamos modificando nuestro modelo de objetos y queremos a la vez verlo impactado en nuestro modelo de datos.
 
-### Creacion de HibernateUtil
-La creacion de esta clase es opcional, pero concretamente no existe proyecto que no tenga una clase encargada de adminsitrar la session factory de hibernate.
+### Creación de HibernateUtil
+La creación de esta clase es opcional, pero concretamente no existe proyecto que no tenga una clase encargada de adminsitrar la session factory de hibernate.
 En nuestro caso creamos una especie de singleton de la clase SessionFactory. Con esto queremos decir que nuestra SessionFactory va a ser la misma durante toda la ejecucion de nuestro programa.
-Pero veamos algo de codigo, la cosa quedaria asi:
+Pero veamos algo de código, la cosa quedaría asi:
 ```java
 public class HibernateUtil {
     private static SessionFactory sessionFactory = buildSessionFactory();
@@ -144,6 +151,7 @@ Como podemos observar, dentro de esta clase utilitaria estamos indicandole al re
 para el mapeo de los distintos objetos y tablas, tenemos dos formas en hibernate, una es mediante la especificacion propia de Hibernate la cual puede ser realizada con archivos XML, y la otra es mediante anotaciones definidas en las especificaciones JPA, las cuales nos permiten abstraer nuestro modelo de persistencia del ORM con el que estemos trabajando, esto quiere decir que si el dia de manana decidieramos cambiar de hibernate por spring data por ejemplo, nuestras entidades deberian quedar exactamente igual.
 ### DER
 ![alt text](https://github.com/hernancasla/Demo-hibernate-jdbc/blob/main/readme-files/der.png?raw=true)
+
 OJO! aun no tenemos nada creado en la base de datos, vamos a trabajar solamente con hibernate
 
 ### Entities
@@ -164,11 +172,15 @@ public class Product {
     private Double price;
 }
 ```
-Omitimos los getters y setters solo para no sumar codigo innecesario para la explicacion, pero obviamente en el codigo estan implementados.
+Omitimos los getters y setters solo para no sumar código innecesario para la explicacion, pero obviamente en el codigo estan implementados.
 Veamos cada Annotation de **JPA** que agregamos
+
 `@Entity:` Definimos una nueva entidad de la base de datos que vamos a relacionar directamente con nuestra clase Product
+
 `@Table(name="PRODUCT"):` Definimos atributos propio de la tabla que queremos mapear, en este caso solo se agrego el nombre,pero existen muchas otras propiedades para agregar.
+
 `@Id:` es una annotation obligatoria en JPA, la cual indica el identificador unico de nuestra tabla
+
 `@Column:`  con esta annotation mapeamos las columnas de la base con artributos de nuestra clase, en este ejemplo solo se esta mapeando el nombre pero existen mas atributos que veremos en breve.
 
 Sigamos por la entidad ORDER
@@ -191,18 +203,20 @@ public class Order {
 }
 ```
 Veamos que hay de nuevo,
+
 `@GeneratedValue(strategy=GenerationType.AUTO):` Con esta annotation y su parametro strategy estamos diciendole a hibernate que este ID va a ser autogenerado es decir estamos delegando la responsabilidad de la generacion del ID de la tabla a hibernate, tambien podriamos configurar una secuencia propia de la base para que haga uso de ella, es bastante versatil.
 
-` @CreationTimestamp:` con esta annotation le estamos indicando a hibernate que nuestro "date" tiene un valor por defecto, el cual es la fecha y hora del momdento de creacion de la tabla... bastante practico no?
+`@CreationTimestamp:` con esta annotation le estamos indicando a hibernate que nuestro "date" tiene un valor por defecto, el cual es la fecha y hora del momdento de creacion de la tabla... bastante practico no?
 
-**Llegamos a un punto importante de la especificacion de JPA, las relaciones!!!**
+**Llegamos a un punto importante de la especificación de JPA, las relaciones!!!**
 Existen varios tipos de relaciones entre tablas de bases de datos, 1 a 1, 1 a muchos, muchos a 1. Vamos a desarrollar dos de ellos en esta demo.
 
 `@OneToMany(cascade = CascadeType.ALL):` Con esta annotation le estamos diciendo a hibernate que nuestra clase Order tiene una lista de detalles es decir, 1 orden - muchos detalles, por eso la annotation **OneToMany**. Ademas estamos definidiendo el atributo **cascade** en ete caso estamos indicando que el cascadeo va a ser total, es decir, OrderDetail no va a existir mas que por medio de nuestra clase Order, si un detalle es borrado de una orden, este mismo va a ser eliminado de la tabla detalle, y si una orden es eliminada, entonces todos sus detalles lo seran tambien. Existen varias configuraciones de cascade, dependiendo de nuestra necesidad utilizaremos la mas nos convenga.
-`@JoinColumn:` con esta annotation definimos cuales son las columnas que relacionan las tablas.
+
+`@JoinColumn:` con esta annotation definimos cuáles son las columnas que relacionan las tablas.
 
 
-Y por ultimo veamos la entidad ORDER_DETAIL
+Y por último veamos la entidad ORDER_DETAIL
 ```Java
 @Entity
 @Table(name="ORDER_DETAIL")
@@ -223,7 +237,7 @@ public class OrderDetail {
 
 ##### Listo todo mapeado!!!
 
-## Creacion de los DAOs
+## Creación de los DAOs
 Si bien podriamos hacer uso directo de la API que nos proporciona hibernate para la ralizar nuestro CRUD, como somos gente de bien, vamos a implementar una capa de DAO (data access object) en la cual delegamos la responsabilidad de realizar cada operacion del CRUD.
 ProductDao
 ```Java
@@ -262,7 +276,8 @@ public class ProductDao implements DAO<Product> {
         session.getTransaction().commit();
     }
 ```
-Veamos que tenemos de itneresante,
+Veamos que tenemos de interesante,
+
 `HibernateUtil.getSessionFactory().openSession()` con esto obtenemos una Session de hibernate con la cual vamos a estar interactuando en cada operacion que deseemos realizar.
 
 `session.get(Product.class, id)` Se puede observar que obtener un producto por su ID es tan simple como pasar la clase y el correspondiente ID al metodo get del objeto session... nada mal pero sigamos.
