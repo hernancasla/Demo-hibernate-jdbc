@@ -206,7 +206,7 @@ Veamos que hay de nuevo,
 
 `@GeneratedValue(strategy=GenerationType.AUTO):` Con esta annotation y su parametro strategy estamos diciendole a hibernate que este ID va a ser autogenerado es decir estamos delegando la responsabilidad de la generacion del ID de la tabla a hibernate, tambien podriamos configurar una secuencia propia de la base para que haga uso de ella, es bastante versatil.
 
-`@CreationTimestamp:` con esta annotation le estamos indicando a hibernate que nuestro "date" tiene un valor por defecto, el cual es la fecha y hora del momdento de creacion de la tabla... bastante practico no?
+`@CreationTimestamp:` con esta annotation le estamos indicando a hibernate que nuestro "date" tiene un valor por defecto, el cual es la fecha y hora del momento de creación de la tabla... bastante practico no?
 
 **Llegamos a un punto importante de la especificación de JPA, las relaciones!!!**
 Existen varios tipos de relaciones entre tablas de bases de datos, 1 a 1, 1 a muchos, muchos a 1. Vamos a desarrollar dos de ellos en esta demo.
