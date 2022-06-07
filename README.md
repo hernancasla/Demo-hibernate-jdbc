@@ -151,7 +151,7 @@ Como podemos observar, dentro de esta clase utilitaria estamos indicandole al re
 para el mapeo de los distintos objetos y tablas, tenemos dos formas en hibernate, una es mediante la especificacion propia de Hibernate la cual puede ser realizada con archivos XML, y la otra es mediante anotaciones definidas en las especificaciones JPA, las cuales nos permiten abstraer nuestro modelo de persistencia del ORM con el que estemos trabajando, esto quiere decir que si el dia de manana decidieramos cambiar de hibernate por spring data por ejemplo, nuestras entidades deberian quedar exactamente igual.
 ### DER
 ![alt text](https://github.com/hernancasla/Demo-hibernate-jdbc/blob/main/readme-files/der.png?raw=true)
----
+
 
 OJO! aun no tenemos nada creado en la base de datos, vamos a trabajar solamente con hibernate
 
